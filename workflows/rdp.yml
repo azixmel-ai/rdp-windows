@@ -1,0 +1,34 @@
+name: Windows RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    
+    steps:
+    - name: Set up
+      run: |
+        # Désactive le pare-feu
+        netsh advfirewall set allprofiles state off
+        # Crée l'utilisateur
+        net user runneradmin ${{ secrets.PASSWORD }} /add
+        net localgroup administrators runneradmin /add
+        # Active RDP
+        reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+        
+    - name: Get IP
+      run: |
+        $ip = (Invoke-WebRequest -Uri "https://api.ipify.org").Content
+        echo "IP: $ip"
+        echo "Utilisateur: runneradmin"
+        echo "Mot de passe: ${{ secrets.PASSWORD }}"
+        
+    - name: Keep alive
+      run: |
+        # Garde le workflow actif pendant 6 heures
+        for ($i = 0; $i -lt 360; $i++) {
+          Write-Host "RDP actif - $([DateTime]::Now)"
+          Start-Sleep -Seconds 60
+        }
